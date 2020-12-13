@@ -20,7 +20,6 @@ Thread.new do
       next
     end
 
-    p message_list
     delete_messages = message_list.reject { |message| /【ニックネーム】.*\n【ゲームタグ】.*\n【一言】.*/.match?(message.content) }
     message_list.shift(delete_messages.size)
     next if delete_messages.empty?
