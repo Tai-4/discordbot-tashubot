@@ -2,7 +2,6 @@ require 'discordrb'
 
 @bot = Discordrb::Commands::CommandBot.new(token: "NzMxMTExMjY4MjAyODQwMTE2.XwhSbQ.GVTdg4FrtJLW9RCoqgXYRxBLENw", client_id: 731111268202840116, prefix:'?')
 
-p File.expand_path(__FILE__)
 File.open('/app/たしゅぼっと/Code/body.rb', "r") do |file|
   file_data = file.readlines
   @commands_list = file_data.map { |datum| datum.match(/@bot.command :(.+) do |.+|/)[1] }.compact!
