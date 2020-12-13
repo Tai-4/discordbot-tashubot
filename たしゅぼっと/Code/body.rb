@@ -66,7 +66,7 @@ end
     return "曲名は必ず指定 ＼_(・ω・`)ココ重要！"
   end
 
-  File.open('.\たしゅぼっと\Add_music', "a+") do |file|
+  File.open('/app/たしゅぼっと/Add_music', "a+") do |file|
     music_list = file.readlines.map(&:chomp)
     if music_list.include?(music_title)
       return "「#{music_title}」は既に追加されています..."
@@ -86,10 +86,10 @@ end
     return "入力形式が違うよ。helpコマンドで確認してね。"
   end
 
-  File.open('.\たしゅぼっと\Tai4_Music', "r") do |music_file|
+  File.open('/app/たしゅぼっと/Tai4_Music', "r") do |music_file|
     music_list = music_file.readlines
     if permission == "on"
-      File.open('.\たしゅぼっと\Add_music', "r") do |added_music_file|
+      File.open('/app/たしゅぼっと/Add_music', "r") do |added_music_file|
         added_music_file.readlines.each { |added_music| music_list << added_music}
       end
     end
