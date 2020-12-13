@@ -1,5 +1,5 @@
 require 'discordrb'
-require_relative '.\commands_help.rb'
+require_relative 'commands_help.rb'
 
 @bot = Discordrb::Commands::CommandBot.new(token: "Nzg0NzczODQ4Njg4MDk5Mzgw.X8uLmQ.yCtmd_ZD37Vdm7mh0MmrupeSUCY", client_id: 784773848688099380, prefix:'?')
 
