@@ -1,5 +1,5 @@
 require 'discordrb'
-require '.\たしゅぼっと\Code\commands_help.rb'
+require_relative '.\commands_help.rb'
 
 @bot = Discordrb::Commands::CommandBot.new(token: "Nzg0NzczODQ4Njg4MDk5Mzgw.X8uLmQ.yCtmd_ZD37Vdm7mh0MmrupeSUCY", client_id: 784773848688099380, prefix:'?')
 
@@ -20,6 +20,7 @@ Thread.new do
       next
     end
 
+    p message_list
     delete_messages = message_list.reject { |message| /【ニックネーム】.*\n【ゲームタグ】.*\n【一言】.*/.match?(message.content) }
     message_list.shift(delete_messages.size)
     next if delete_messages.empty?
@@ -65,7 +66,7 @@ end
     return "曲名は必ず指定 ＼_(・ω・`)ココ重要！"
   end
 
-  File.open('D:\ドキュメント\Programming\Project\Discord\Bot\たしゅぼっと\Add_music', "a+") do |file|
+  File.open('D:\ドキュメント\Programming\Github\discordbot-tashumibot\たしゅぼっと\Add_music', "a+") do |file|
     music_list = file.readlines.map(&:chomp)
     if music_list.include?(music_title)
       return "「#{music_title}」は既に追加されています..."
@@ -85,10 +86,10 @@ end
     return "入力形式が違うよ。helpコマンドで確認してね。"
   end
 
-  File.open('D:\ドキュメント\Programming\Project\Discord\Bot\たしゅぼっと\Tai4_Music', "r") do |music_file|
+  File.open('D:\ドキュメント\Programming\Github\discordbot-tashumibot\たしゅぼっと\Tai4_Music', "r") do |music_file|
     music_list = music_file.readlines
     if permission == "on"
-      File.open('D:\ドキュメント\Programming\Project\Discord\Bot\たしゅぼっと\Add_music', "r") do |added_music_file|
+      File.open('D:\ドキュメント\Programming\Github\discordbot-tashumibot\たしゅぼっと\Add_music', "r") do |added_music_file|
         added_music_file.readlines.each { |added_music| music_list << added_music}
       end
     end
