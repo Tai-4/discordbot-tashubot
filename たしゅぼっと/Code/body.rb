@@ -1,7 +1,7 @@
 require 'discordrb'
 require_relative 'commands_help.rb'
 
-@bot = Discordrb::Commands::CommandBot.new(token: ENV["TOKEN"], client_id: ENV["CLINET_ID"], prefix:'?')
+@bot = Discordrb::Commands::CommandBot.new(token: ENV["TOKEN"], client_id: ENV["CLIENT_ID"], prefix:'?')
 # @bot_user_object = @bot.user(784773848688099380) # Cache(モジュール)を使用してたしゅぼっとを指すUserクラスのインスタンスを作成。
 
 def process_unless_self_introduction_channel(event_channel_id)

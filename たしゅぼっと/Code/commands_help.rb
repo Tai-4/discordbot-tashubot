@@ -1,6 +1,6 @@
 require 'discordrb'
 
-@bot = Discordrb::Commands::CommandBot.new(token: ENV["TOKEN"], client_id: ENV["CLINET_ID"], prefix:'?')
+@bot = Discordrb::Commands::CommandBot.new(token: ENV["TOKEN"], client_id: ENV["CLIENT_ID"], prefix:'?')
 
 File.open('/app/たしゅぼっと/Code/body.rb', "r") do |file|
   file_data = file.readlines
