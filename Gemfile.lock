@@ -12,6 +12,7 @@ GEM
       rest-client (>= 2.1.0.rc1)
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
+    dotenv (2.7.6)
     event_emitter (0.2.6)
     ffi (1.13.1-x64-mingw32)
     http-accept (1.7.0)
@@ -44,6 +45,7 @@ PLATFORMS
 
 DEPENDENCIES
   discordrb (= 3.3.0)
+  dotenv
 
 RUBY VERSION
    ruby 2.7.1p83
