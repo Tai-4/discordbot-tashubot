@@ -1,5 +1,6 @@
 require 'discordrb'
 require_relative 'commands_help.rb'
+require_relative 'database.rb'
 
 @bot = Discordrb::Commands::CommandBot.new(token: ENV["TOKEN"], client_id: ENV["CLIENT_ID"], prefix:'?')
 # @bot_user_object = @bot.user(784773848688099380) # Cache(モジュール)を使用してたしゅぼっとを指すUserクラスのインスタンスを作成。
@@ -75,53 +76,23 @@ end
 
 @bot.command :addm do |event|
   process_unless_self_introduction_channel(event.channel.id) do
+    id_user_requesting = event.author.id
     music_title = event.message.content.split[1]
-    unless music_title
-      return "曲名は必ず指定 ＼_(・ω・`)ココ重要！"
-    end
-
-    File.open('/app/たしゅぼっと/Add_music', "a+") do |file|
-      music_list = file.readlines.map(&:chomp)
-      if music_list.include?(music_title)
-        return "「#{music_title}」は既に追加されています..."
-      else
-        file.puts music_title
-        "「#{music_title}」の追加が完了しました！"
-      end
-    end
+    return "曲名は必ず指定 ＼_(・ω・`)ココ重要！" unless music_title
+    add_music(music_title, id_user_requesting)
   end
 end
 
 @bot.command :chom do |event|
   process_unless_self_introduction_channel(event.channel.id) do
     begin
-      message_content = event.message.content
-      number = Integer(message_content.split[1])
-      permission = message_content.split[2]
+      id_user_requesting = event.author.id
+      song_count = Integer(event.message.content.split[1])
     rescue ArgumentError, TypeError
       return "入力形式が違うよ。helpコマンドで確認してね。"
     end
 
-    File.open('/app/たしゅぼっと/Tai4_Music', "r") do |music_file|
-      music_list = music_file.readlines
-      if permission == "on"
-        File.open('/app/たしゅぼっと/Add_music', "r") do |added_music_file|
-          added_music_file.readlines.each { |added_music| music_list << added_music}
-        end
-      end
-
-      if (1..(music_list.size)).include?(number)
-        message = ""
-        number.times do
-          target_music_index = rand 0...(music_list.size)
-          message << "#{music_list[target_music_index]}\n"
-          music_list.delete_at(target_music_index)
-        end
-        message
-      else
-        "現在指定できる曲数は、1~#{music_list.size}個です。"
-      end
-    end
+    choose_music(song_count, id_user_requesting)
   end
 end
 

@@ -46,7 +46,7 @@ def commands_help(event_channel_object, command_name)
       )
     when "chom"
       create_help_embed(
-        event_channel_object, "chom", ["一般コマンド", "属性に曲数を指定すると、任意の曲を曲数だけ提示します。許可設定では、ユーザーによって追加された曲が選択されるかを変更可能です。曲数指定は必須です。許可設定はデフォルトでoffになっています。"], "[?name 曲数 (on/off)]"
+        event_channel_object, "chom", ["一般コマンド", "?addで追加された曲の中から曲を提示します。属性指定は必須です。"], "[?name 曲数]"
       )
     when "dem"
       create_help_embed(
