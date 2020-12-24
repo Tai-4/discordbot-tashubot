@@ -7,7 +7,7 @@ require_relative 'narou_api.rb'
 # @bot_user_object = @bot.user(784773848688099380) # Cache(モジュール)を使用してたしゅぼっとを指すUserクラスのインスタンスを作成。
 
 def process_unless_self_introduction_channel(event_channel_id)
-  if event_channel_id == 784702508927811604 ? true : false
+  if event_channel_id == 784702508927811604
     @bot.send_temporary_message(event_channel_id, "自己紹介チャンネルでは使えないコマンドです...", 3)
   else
     yield
