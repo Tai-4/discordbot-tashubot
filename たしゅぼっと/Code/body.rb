@@ -1,6 +1,7 @@
 require 'discordrb'
 require_relative 'commands_help.rb'
 require_relative 'database.rb'
+require_relative 'narou_api.rb'
 
 @bot = Discordrb::Commands::CommandBot.new(token: ENV["TOKEN"], client_id: ENV["CLIENT_ID"], prefix:'?')
 # @bot_user_object = @bot.user(784773848688099380) # Cache(モジュール)を使用してたしゅぼっとを指すUserクラスのインスタンスを作成。
@@ -124,6 +125,24 @@ end
     else
       "指定できる個数は1~100個です。"
     end
+  end
+end
+
+@bot.command :narou do |event|
+  event_channel = event.channel
+  process_unless_self_introduction_channel(event_channel.id) do
+    begin
+      number = Integer(event.message.content.split[1])
+      return "指定できる数は1つから2つまでだよ。" unless (1..2).include?(number)
+    rescue ArgumentError, TypeError
+      return "入力形式が違うよ。helpコマンドで確認してね。"
+    end
+
+    sleep 3
+    novels_data = get_narou_novel(number)
+    novels_data.each { |novel_data| event_channel.send_message("Title: #{novel_data["title"]}\nncode: #{novel_data["ncode"]}") }
+
+    nil # novels_dataの返り値の送信を回避する
   end
 end
 
