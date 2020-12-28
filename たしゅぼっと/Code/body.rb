@@ -130,19 +130,40 @@ end
 
 @bot.command :narou do |event|
   event_channel = event.channel
-  process_unless_self_introduction_channel(event_channel.id) do
+  event_channel_id = event_channel.id
+  process_unless_self_introduction_channel(event_channel_id) do
+    user_requesting = event.author
+    check_parameter_message_id = event_channel.send_message("**個数(1~5)**と**指定したいジャンルすべて**を順番にスペース区切りで入力してください。\nジャンルが指定されなかった場合は、以下のジャンルすべてが適用されます。```恋愛\nハイファンタジー\nローファンタジー```").id
+
     begin
-      number = Integer(event.message.content.split[1])
-      return "指定できる数は1つから2つまでだよ。" unless (1..2).include?(number)
+      message_content = user_requesting.await!.message.content.split
+      number = Integer(message_content.shift) # 最初の要素を削除しつつ取得する。
+      return "指定できる作品数は1~5個だよ。" unless (1..5).include?(number)
     rescue ArgumentError, TypeError
       return "入力形式が違うよ。helpコマンドで確認してね。"
     end
 
-    sleep 3
-    novels_data = get_narou_novel(number)
-    novels_data.each { |novel_data| event_channel.send_message("Title: #{novel_data["title"]}\nncode: #{novel_data["ncode"]}") }
+    genre = ""
+    message_content.map do |targeted_genre|
+      case targeted_genre
+      when "恋愛" then genre << "101-102"
+      when "ハイファンタジー" then genre << "201"
+      when "ローファンタジー" then genre << "202"
+      else
+        event_channel.send_temporary_message("存在しないジャンルが指定されています！\n備考:「#{targeted_genre}」", 3)
+      end
+    end
+    genre = "101-102-201-202" if genre.empty?
 
-    nil # novels_dataの返り値の送信を回避する
+    sleep 3
+    novels_data = get_narou_novel(number, genre)
+    event_channel.send_embed do |embed|
+      embed.title = "おすすめの作品"
+      embed.description = "日間ポイントの高い順100件の中から無作為に選んでいます。"
+      novels_data.each { |novel_data| embed.add_field(name: "#{novel_data["title"]}", value: "ncode: #{novel_data["ncode"]} genre: #{novel_data["genre"]}", inline: false) }
+    end
+
+    Discordrb::API::Channel.delete_message(@bot.token, event_channel_id, check_parameter_message_id)
   end
 end
 

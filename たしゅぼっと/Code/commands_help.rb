@@ -8,11 +8,11 @@ File.open('/app/たしゅぼっと/Code/body.rb', "r") do |file|
   @commands_list_for_help = @commands_list.map { |command| "`#{command}`"}.join(", ")
 end
 
-def create_help_embed(channel_object, title = nil, attribute = nil, input_format_description = nil)
+def create_help_embed(channel_object, title = nil, attribute = nil, command_format_description = nil)
   channel_object.send_embed do |embed|
     embed.title = "コマンド名: #{title}"
     embed.description = "種類: #{attribute[0]}\n説明:\n```#{attribute[1]}```"
-    embed.add_field(name: "入力形式", value: input_format_description, inline: false) if input_format_description # Discordrb::Webhooks::EmbedField.new でも可(このときは embed.push() になる。)
+    embed.add_field(name: "入力形式", value: input_format_description, inline: false) if command_format_description # Discordrb::Webhooks::EmbedField.new でも可(このときは embed.push() になる。)
   end
 end
 

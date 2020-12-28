@@ -3,12 +3,12 @@ require "zlib"
 require "json"
 require "uri"
 
-def get_narou_novel(number)
+def get_narou_novel(number, requested_genre)
   parameter_settings = {
-    of: "t-n",
-    lim: number,
+    of: "t-n-g",
+    lim: 100,
     order: "dailypoint",
-    genre: "101-102-201-202"
+    genre: requested_genre
   }
 
   parameter = ""
@@ -25,6 +25,5 @@ def get_narou_novel(number)
 
   response = JSON.parse(inflated_json_response)
   response.shift # allcountの削除
-
-  response
+  response.sample(number)
 end
