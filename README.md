@@ -1,2 +1,3 @@
 # discordbot-tashumibot
-Tashumibot is active on tashumi Server.
+「たしゅ民プロジェクト」で活動しているBotです。
+Tashubot is active on Tashumin-project.
