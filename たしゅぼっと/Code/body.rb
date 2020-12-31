@@ -132,38 +132,67 @@ end
   event_channel = event.channel
   event_channel_id = event_channel.id
   process_unless_self_introduction_channel(event_channel_id) do
-    user_requesting = event.author
-    check_parameter_message_id = event_channel.send_message("**個数(1~5)**と**指定したいジャンルすべて**を順番にスペース区切りで入力してください。\nジャンルが指定されなかった場合は、以下のジャンルすべてが適用されます。```恋愛\nハイファンタジー\nローファンタジー```").id
+    requesting_user = event.author
+    requesting_user_id = requesting_user.id
+    check_parameter_message = event_channel.send_message("**個数(1~5)**と**指定したいジャンルすべて**を順番にスペース区切りで入力してください。\nジャンルが指定されなかった場合は、以下のジャンルすべてが適用されます。\n\n※20秒経ったら処理は止まります。0と発言すると強制的に処理は止まります。```恋愛\nハイファンタジー\nローファンタジー```")
+
+    message_specified_parameter_event = requesting_user.await!(timeout: 20)
+    if message_specified_parameter_event.nil?
+      check_parameter_message.edit("20秒が経過しました。処理を停止します。")
+      return
+    end
 
     begin
-      message_content = user_requesting.await!.message.content.split
-      number = Integer(message_content.shift) # 最初の要素を削除しつつ取得する。
-      return "指定できる作品数は1~5個だよ。" unless (1..5).include?(number)
+      # 指定作品数をspecified_novels_numberに、指定ジャンルをspecified_genresに代入する。
+      specified_parameter_list = message_specified_parameter_event.message.content.split
+      specified_novels_number = Integer(specified_parameter_list.shift)
+      specified_genres = specified_parameter_list
     rescue ArgumentError, TypeError
       return "入力形式が違うよ。helpコマンドで確認してね。"
     end
 
-    genre = ""
-    message_content.map do |targeted_genre|
-      case targeted_genre
-      when "恋愛" then genre << "101-102"
-      when "ハイファンタジー" then genre << "201"
-      when "ローファンタジー" then genre << "202"
+    if specified_novels_number == 0
+      check_parameter_message.edit("処理を停止しました！")
+      return
+    end
+
+    unless (1..5).include?(specified_novels_number)
+      check_parameter_message.edit("<@#{requesting_user_id}> 指定できる作品数は1~5個だよ。")
+      return
+    end
+
+    if specified_genres.size > 3
+      check_parameter_message.edit("<@#{requesting_user_id}> 指定ジャンルが多すぎます！")
+      return
+    end
+
+    wrong_genre_list = []
+    narou_api_format_specified_genres = ""
+    specified_genres.map do |genre|
+      case genre
+      when "恋愛" then narou_api_format_specified_genres << "101-102"
+      when "ハイファンタジー" then narou_api_format_specified_genres << "201"
+      when "ローファンタジー" then narou_api_format_specified_genres << "202"
       else
-        event_channel.send_temporary_message("存在しないジャンルが指定されています！\n備考:「#{targeted_genre}」", 3)
+        wrong_genre_list << "「#{genre}」"
       end
     end
-    genre = "101-102-201-202" if genre.empty?
 
-    sleep 3
-    novels_data = get_narou_novel(number, genre)
-    event_channel.send_embed do |embed|
-      embed.title = "おすすめの作品"
-      embed.description = "日間ポイントの高い順100件の中から無作為に選んでいます。"
-      novels_data.each { |novel_data| embed.add_field(name: "#{novel_data["title"]}", value: "ncode: #{novel_data["ncode"]} genre: #{novel_data["genre"]}", inline: false) }
+    unless wrong_genre_list.empty?
+      check_parameter_message.edit("<@#{requesting_user_id}> 存在しないジャンル#{wrong_genre_list.join(",")}が指定されています！")
+      return
     end
 
-    Discordrb::API::Channel.delete_message(@bot.token, event_channel_id, check_parameter_message_id)
+    check_parameter_message.edit("リクエスト中です...\nこの処理には時間がかかります。少々お待ち下さい。")
+
+    sleep 3
+    novels_data = get_narou_novel(specified_novels_number, narou_api_format_specified_genres)
+
+    embed = Discordrb::Webhooks::Embed.new
+    embed.title = "おすすめの作品"
+    embed.description = "日間ポイントの高い順100件の中から無作為に選んでいます。"
+    novels_data.each { |novel_data| embed.add_field(name: "#{novel_data["title"]}", value: "ncode: #{novel_data["ncode"]} genre: #{novel_data["genre"]}", inline: false) }
+    check_parameter_message.edit("", embed)
   end
 end
 
