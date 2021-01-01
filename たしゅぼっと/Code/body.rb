@@ -4,7 +4,8 @@ require_relative 'database.rb'
 require_relative 'narou_api.rb'
 
 @bot = Discordrb::Commands::CommandBot.new(token: ENV["TOKEN"], client_id: ENV["CLIENT_ID"], prefix:'?')
-# @bot_user_object = @bot.user(784773848688099380) # Cache(モジュール)を使用してたしゅぼっとを指すUserクラスのインスタンスを作成。
+# Cache(Botクラスにインクルードされているモジュール)を使用してたしゅぼっとを指すUserクラスのインスタンスを作成する。
+# @bot_user_object = @bot.user(784773848688099380)
 
 def process_unless_self_introduction_channel(event_channel_id)
   if event_channel_id == 784702508927811604
@@ -14,15 +15,28 @@ def process_unless_self_introduction_channel(event_channel_id)
   end
 end
 
-# 自己紹介チャンネルにおいて、規定に沿っていないメッセージを自動削除する
-# await!メソッドで永遠に待機させる必要があるので、マルチスレッド機能を利用する。
+def admin_member?(member, server)
+  # 管理者権限を持っているか判定するのにビットフラグを使用しているが、もしかしたら同挙動のメソッドがあるかもしれない。
+  return true if member == server.owner
+  user_has_role_list = member.roles << server.everyone_role
+  user_has_admin_roles = user_has_role_list.select { |user_has_role| user_has_role.permissions.bits.to_s(2)[-4] == "1" }
+  user_has_admin_roles.empty? ? false : true
+end
+
+# 自己紹介チャンネルにおいて、規定に沿っていないメッセージを自動削除する機能
+# await!メソッドを使って常時待機させるので、他のコマンドを実行できるように、Threadを利用する。
 Thread.new do
   message_list = []
+  tashumi_server_id = 784700980381351936
   self_introduction_channel_id = 784702508927811604
-  self_introduction_channel = @bot.channel(self_introduction_channel_id, 784700980381351936) # Cache(モジュール)を使用して自己紹介チャンネルのオブジェクトを生成。[引数: (チャンネルID, サーバーID) ]
+  self_introduction_channel = @bot.channel(self_introduction_channel_id, tashumi_server_id)
 
-  Thread.new { loop { message_list << self_introduction_channel.await!.message } } # Message(Object)が戻り値。messageメソッドを使用しない場合は、Discordrb::Events::MessageEventというクラスのインスタンスが返される。
-  # Thread.new { loop { message_list << @bot_user_object.await!.message } }          # たしゅぼっとのメッセージに反応しないので、たしゅぼっと自体を待機するようにしたが、失敗。
+  # Message(Object)が戻り値。messageメソッドを使用しない場合は、Discordrb::Events::MessageEventクラスのインスタンスが戻り値。
+  Thread.new { loop { message_list << self_introduction_channel.await!.message } }
+
+  # たしゅぼっとのメッセージに反応しないので、たしゅぼっと自体を待機するようにしたが、反応しない。
+  # 改善策として、それぞれのコマンドの処理を process_unless_self_introduction_channel のブロックに書いている。
+  # Thread.new { loop { message_list << @bot_user_object.await!.message } }
 
   loop do
     if message_list.empty?
@@ -30,20 +44,21 @@ Thread.new do
       next
     end
 
-    delete_messages = message_list.reject { |message| /【ニックネーム】.*\n【ゲームタグ】.*\n【一言】.*/.match?(message.content) }
-    message_list.shift(delete_messages.size)
-    next if delete_messages.empty?
+    messages_to_delete = message_list.reject { |message| /【ニックネーム】.+\n【ゲームタグ】.+\n【一言】.+/.match?(message.content) }
+    message_list.clear
+    next if messages_to_delete.empty?
 
-    delete_messages_ids = delete_messages.map(&:id)
-    delete_messages_authors_mention = delete_messages.map { |delete_message| "<@#{delete_message.author.id}>"}.uniq
-    # send_messageの戻り値は送信したメッセージのMessage(Object)なので、idメソッドを呼び出せる。
-    delete_messages_ids << self_introduction_channel.send_message("#{delete_messages_authors_mention.join(" ")} 自己紹介以外のメッセージは禁止されています！").id
+    messages_to_delete_ids = messages_to_delete.map(&:id)
+    mention_format_delete_to_message_authors = messages_to_delete.map { |delete_message| "<@#{delete_message.author.id}>"}.uniq
+
+    # send_messageの戻り値は送信したメッセージのMessageオブジェクト。
+    messages_to_delete_ids << self_introduction_channel.send_message("#{mention_format_delete_to_message_authors.join(" ")} 自己紹介以外のメッセージは禁止されています！").id
 
     sleep 5
-    Discordrb::API::Channel.bulk_delete_messages(@bot.token, self_introduction_channel_id, delete_messages_ids)
-    delete_messages.clear
-    delete_messages_ids.clear
-    delete_messages_authors_mention.clear
+    Discordrb::API::Channel.bulk_delete_messages(@bot.token, self_introduction_channel_id, messages_to_delete_ids)
+    messages_to_delete.clear
+    messages_to_delete_ids.clear
+    mention_format_delete_to_message_authors.clear
   end
 end
 
@@ -99,9 +114,7 @@ end
 
 @bot.command :dem do |event|
   process_unless_self_introduction_channel(event.channel.id) do
-    unless event.author.roles[0].permissions.bits.to_s(2)[-4] == "1" # 役職に管理者があるか確認(ビットフラグ)
-      return "おめーに管理者権限、ねぇから！"
-    end
+    return "おめーに管理者権限、ねぇから！" unless admin_member?(event.user, event.server)
 
     begin
       number = Integer(event.message.content.split[1])
