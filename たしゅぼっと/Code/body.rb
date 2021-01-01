@@ -107,7 +107,6 @@ end
     rescue ArgumentError, TypeError
       return "入力形式が違うよ。helpコマンドで確認してね。"
     end
-
     choose_music(song_count, id_user_requesting)
   end
 end
@@ -118,25 +117,24 @@ end
 
     begin
       number = Integer(event.message.content.split[1])
+      return "指定できる個数は1~100個です。" unless (1..100).include?(number)
     rescue ArgumentError, TypeError
       return "入力形式が違うよ。helpコマンドで確認してね。"
     end
 
-    if (1..100).include?(number)
-      event_channel_id = event.channel.id
-      event_message_id = event.message.id
-      message_data = Discordrb::API::Channel.messages(@bot.token, event_channel_id, number, event_message_id)
-      message_ids = JSON.parse(message_data).map { |data| data["id"]}
+    event_channel_id = event.channel.id
+    event_message_id = event.message.id
+    messages_datum_before_command_message = Discordrb::API::Channel.messages(@bot.token, event_channel_id, number, event_message_id)
+    messages_id_before_command_message = JSON.parse(messages_datum_before_command_message).map { |data| data["id"] }
 
-      if message_ids.size == 100
-        Discordrb::API::Channel.delete_message(@bot.token, event_channel_id, event_message_id)
-        Discordrb::API::Channel.bulk_delete_messages(@bot.token, event_channel_id, message_ids)
-      else
-        message_ids << event_message_id
-        Discordrb::API::Channel.bulk_delete_messages(@bot.token, event_channel_id, message_ids)
-      end
+    if messages_id_before_command_message.empty?
+      Discordrb::API::Channel.delete_message(@bot.token, event_channel_id, event_message_id)
+    elsif messages_id_before_command_message.size == 100
+      Discordrb::API::Channel.delete_message(@bot.token, event_channel_id, event_message_id)
+      Discordrb::API::Channel.bulk_delete_messages(@bot.token, event_channel_id, messages_id_before_command_message)
     else
-      "指定できる個数は1~100個です。"
+      messages_id_before_command_message << event_message_id
+      Discordrb::API::Channel.bulk_delete_messages(@bot.token, event_channel_id, messages_id_before_command_message)
     end
   end
 end
@@ -197,7 +195,6 @@ end
     end
 
     check_parameter_message.edit("リクエスト中です...\nこの処理には時間がかかります。少々お待ち下さい。")
-
     sleep 3
     novels_data = get_narou_novel(specified_novels_number, narou_api_format_specified_genres)
 
