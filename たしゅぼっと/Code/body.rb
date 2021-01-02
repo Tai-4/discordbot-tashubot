@@ -66,7 +66,7 @@ end
 @bot.command :help do |event|
   process_unless_self_introduction_channel(event.channel.id) do
     command_name = event.message.content.split[1]
-    commands_help(event.channel, command_name)
+    send_help(event.channel, command_name)
   end
 end
 
@@ -74,9 +74,11 @@ end
 @bot.command :cmsg do |event|
   process_unless_self_introduction_channel(event.channel.id) do
     begin
-      target_message_id = event.message.content.split[1]
+      target_message_id = Integer(event.message.content.split[1])
       target_message_id ? Discordrb::API::Channel.message(@bot.token, event.channel.id, target_message_id) : "入力形式が違うよ。helpコマンドで確認してね。"
-    rescue RestClient::NotFound => e
+    rescue ArgumentError, TypeError
+      "入力形式が違うよ。helpコマンドで確認してね。"
+    rescue RestClient::NotFound
       "指定したメッセージは見つからなかったよ。"
     end
   end
