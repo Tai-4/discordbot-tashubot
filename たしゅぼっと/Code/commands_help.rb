@@ -1,18 +1,10 @@
 require 'discordrb'
 
-@bot = Discordrb::Commands::CommandBot.new(token: ENV["TOKEN"], client_id: ENV["CLIENT_ID"], prefix:'?')
-
-File.open('/app/たしゅぼっと/Code/body.rb', "r") do |file|
+File.open("#{__dir__.encode("UTF-8")}/body.rb", "r") do |file|
   file_data = file.readlines
   @commands_list = file_data.map { |datum| datum.match(/@bot.command :(.+) do |.+|/)[1] }.compact!
   @commands_list_for_embed = @commands_list.map { |command| "`#{command}`"}.join(", ")
 end
-
-# File.open('D:\ドキュメント\Programming\Github\discordbot-tashubot\たしゅぼっと\Code\body.rb', "r") do |file|
-#   file_data = file.readlines
-#   @commands_list = file_data.map { |datum| datum.match(/@bot.command :(.+) do |.+|/)[1] }.compact!
-#     @commands_list_for_embed = @commands_list.map { |command| "`#{command}`"}.join(", ")
-# end
 
 def send_help_embed(channel_object, title = nil, attribute = nil, command_format_description = nil)
   channel_object.send_embed do |embed|

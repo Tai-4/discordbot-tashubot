@@ -1,14 +1,18 @@
 require 'discordrb'
+@bot = Discordrb::Commands::CommandBot.new(token: ENV["TOKEN"], client_id: ENV["CLIENT_ID"], prefix:'?')
 require_relative 'commands_help.rb'
 require_relative 'database.rb'
-require_relative 'narou_api.rb'
 
-@bot = Discordrb::Commands::CommandBot.new(token: ENV["TOKEN"], client_id: ENV["CLIENT_ID"], prefix:'?')
-# Cache(Botクラスにインクルードされているモジュール)を使用してたしゅぼっとを指すUserクラスのインスタンスを作成する。
-# @bot_user_object = @bot.user(784773848688099380)
+Thread.new do
+  loop do
+    load "#{__dir__.encode("UTF-8")}/narou_api.rb"
+    sleep 86400
+  end
+end
 
 def process_unless_self_introduction_channel(event_channel_id)
-  if event_channel_id == 784702508927811604
+  tashumi_server_self_introduction_channel_id = 784702508927811604
+  if event_channel_id == tashumi_server_self_introduction_channel_id
     @bot.send_temporary_message(event_channel_id, "自己紹介チャンネルでは使えないコマンドです...", 3)
   else
     yield
@@ -24,18 +28,18 @@ def admin_member?(member, server)
 end
 
 # 自己紹介チャンネルにおいて、規定に沿っていないメッセージを自動削除する機能
-# await!メソッドを使って常時待機させるので、他のコマンドを実行できるように、Threadを利用する。
 Thread.new do
   message_list = []
   tashumi_server_id = 784700980381351936
   self_introduction_channel_id = 784702508927811604
   self_introduction_channel = @bot.channel(self_introduction_channel_id, tashumi_server_id)
 
-  # Message(Object)が戻り値。messageメソッドを使用しない場合は、Discordrb::Events::MessageEventクラスのインスタンスが戻り値。
+  # Message(Object)が戻り値。messageメソッドを使用しない場合は、Discordrb::Events::MessageEventクラスのインスタンスが戻り値になる。
   Thread.new { loop { message_list << self_introduction_channel.await!.message } }
 
   # たしゅぼっとのメッセージに反応しないので、たしゅぼっと自体を待機するようにしたが、反応しない。
-  # 改善策として、それぞれのコマンドの処理を process_unless_self_introduction_channel のブロックに書いている。
+  # それぞれのコマンドの処理を process_unless_self_introduction_channel のブロックに記述することで対策している。
+  # @bot_user_object = @bot.user(784773848688099380)
   # Thread.new { loop { message_list << @bot_user_object.await!.message } }
 
   loop do
@@ -50,8 +54,6 @@ Thread.new do
 
     messages_to_delete_ids = messages_to_delete.map(&:id)
     mention_format_delete_to_message_authors = messages_to_delete.map { |delete_message| "<@#{delete_message.author.id}>"}.uniq
-
-    # send_messageの戻り値は送信したメッセージのMessageオブジェクト。
     messages_to_delete_ids << self_introduction_channel.send_message("#{mention_format_delete_to_message_authors.join(" ")} 自己紹介以外のメッセージは禁止されています！").id
 
     sleep 5
@@ -62,7 +64,7 @@ Thread.new do
   end
 end
 
-# 実験: 別ファイルに処理を記述して、実行させることは可能だろうか。 => 可能
+# command定義においては、ブロックの戻り値がコマンドが送信されたチャンネルに送信されることを利用することでコマンドが送信されたチャンネルにメッセージを送信することを実現している箇所もあります。
 @bot.command :help do |event|
   process_unless_self_introduction_channel(event.channel.id) do
     command_name = event.message.content.split[1]
@@ -70,7 +72,6 @@ end
   end
 end
 
-# command定義においては、ブロックの戻り値がコマンドが送信されたチャンネルに送信されることを利用することでコマンドが送信されたチャンネルにメッセージを送信することを実現している箇所もあります。
 @bot.command :cmsg do |event|
   process_unless_self_introduction_channel(event.channel.id) do
     begin
@@ -86,8 +87,8 @@ end
 
 @bot.command :name do |event|
   process_unless_self_introduction_channel do
-    name = event.author.username         # event.user.name も可(エイリアス)
-    nickname = event.author.nickname     # event.user.nick も可(エイリアス)
+    name = event.author.username
+    nickname = event.author.nickname
     %(```Your username: #{name}\nYour nickname: #{nickname ? "#{nickname}": "None" }```)
   end
 end
@@ -156,9 +157,9 @@ end
     end
 
     begin
-      # 指定作品数をspecified_novels_numberに、指定ジャンルをspecified_genresに代入する。
       specified_parameter_list = message_specified_parameter_event.message.content.split
-      specified_novels_number = Integer(specified_parameter_list.shift)
+      specified_novels_number = Integer(specified_parameter_list[0])
+      specified_parameter_list.shift
       specified_genres = specified_parameter_list
     rescue ArgumentError, TypeError
       return "入力形式が違うよ。helpコマンドで確認してね。"
@@ -180,26 +181,26 @@ end
     end
 
     wrong_genre_list = []
-    narou_api_format_specified_genres = ""
+    narou_api_format_specified_genres = [nil, nil, nil]
     specified_genres.map do |genre|
       case genre
-      when "恋愛" then narou_api_format_specified_genres << "101-102"
-      when "ハイファンタジー" then narou_api_format_specified_genres << "201"
-      when "ローファンタジー" then narou_api_format_specified_genres << "202"
+      when "恋愛" then narou_api_format_specified_genres[0] = "101-102"
+      when "ハイファンタジー" then narou_api_format_specified_genres[1] = "201"
+      when "ローファンタジー" then narou_api_format_specified_genres[2] = "202"
       else
         wrong_genre_list << "「#{genre}」"
       end
     end
 
-    unless wrong_genre_list.empty?
+    if wrong_genre_list.empty?
+      narou_api_format_specified_genres.compact!
+      narou_api_format_specified_genres = narou_api_format_specified_genres.join("-")
+    else
       check_parameter_message.edit("<@#{requesting_user_id}> 存在しないジャンル#{wrong_genre_list.join(",")}が指定されています！")
       return
     end
 
-    check_parameter_message.edit("リクエスト中です...\nこの処理には時間がかかります。少々お待ち下さい。")
-    sleep 3
     novels_data = get_narou_novel(specified_novels_number, narou_api_format_specified_genres)
-
     embed = Discordrb::Webhooks::Embed.new
     embed.title = "おすすめの作品"
     embed.description = "日間ポイントの高い順100件の中から無作為に選んでいます。"
