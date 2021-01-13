@@ -3,6 +3,11 @@ require "zlib"
 require "json"
 require "uri"
 
+def get_narou_novel(number, specified_genres)
+  response = @response_by_genre[specified_genres] || []
+  response.sample(number)
+end
+
 @response_by_genre = {}
 all_genre_combination = ["201", "202", "101-102", "201-202", "101-102-201", "101-102-202", "101-102-201-202"]
 all_genre_combination.each do |genres|
@@ -27,9 +32,4 @@ all_genre_combination.each do |genres|
 
   @response_by_genre[genres] = response
   sleep 1
-end
-
-def get_narou_novel(number, specified_genres)
-  response = @response_by_genre[specified_genres]
-  response.sample(number)
 end

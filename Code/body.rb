@@ -201,6 +201,12 @@ end
     end
 
     novels_data = get_narou_novel(specified_novels_number, narou_api_format_specified_genres)
+    while novels_data.empty?
+      # TODO: リクエストに時間がかかっていることを知らせる(editで)
+      sleep 1
+      novels_data = get_narou_novel(specified_novels_number, narou_api_format_specified_genres)
+    end
+
     embed = Discordrb::Webhooks::Embed.new
     embed.title = "おすすめの作品"
     embed.description = "日間ポイントの高い順100件の中から無作為に選んでいます。"
